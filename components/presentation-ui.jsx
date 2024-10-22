@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -24,11 +24,25 @@ export function PresentationUi({ images, currentSlideIndex, goToNextSlide, goToP
   const [currentTime, setCurrentTime] = useState("00:00:00")
   const [isFullScreen, setIsFullScreen] = useState(false)
 
-  const timeItems = slideTimes.map((time, index) => ({
-    id: index + 1,
-    time: formatTime(time),
-    difference: "",
-  }))
+  const PLACEHOLDER_BOX_COUNT = 5;
+
+  const timeItems = images.length > 0
+    ? images.map((_, index) => ({
+        id: index + 1,
+        time: formatTime(slideTimes[index] || 0),
+        difference: "",
+      }))
+    : Array(PLACEHOLDER_BOX_COUNT).fill().map((_, index) => ({
+        id: index + 1,
+        time: "00:00",
+        difference: "",
+      }));
+
+  useEffect(() => {
+    if (images.length > 0 && slideTimes.length !== images.length) {
+      onUpdateSlideTimes(new Array(images.length).fill(0));
+    }
+  }, [images, slideTimes, onUpdateSlideTimes]);
 
   const startPresentation = () => {
     setIsFullScreen(true)
