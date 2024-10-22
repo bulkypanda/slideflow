@@ -5,11 +5,18 @@ import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { PresentationUi } from "@/components/presentation-ui";
 import { UploadModal } from "@/components/upload-modal";
 import {createPresentationSkeleton, uploadImages} from "@/lib/actions";
+import { supabase } from "@/lib/supabase";
 
 export default function Editor({ params }) {
     const { id } = params;
     const [hasPresentationBeenChosenYet, setHasPresentationBeenChosenYet] = useState(null);
     const [images, setImages] = useState([]);
+    const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+    const [slideTimes, setSlideTimes] = useState([]);
+
+    const handleUpdateSlideTimes = (newSlideTimes) => {
+        setSlideTimes(newSlideTimes);
+    };
 
     async function convertPDFToJpeg(file) {
         const pdfjsLib = await import("pdfjs-dist/build/pdf");
@@ -44,22 +51,62 @@ export default function Editor({ params }) {
     }
 
     async function uploadAndConvertPDF(file) {
-        const {id: skeleton} = await createPresentationSkeleton({
+        const { id: skeleton } = await createPresentationSkeleton({
             title: file.name,
-        })
+        });
         const images = await convertPDFToJpeg(file);
 
-        await uploadImages(skeleton, images)
+        await uploadImages(skeleton, images);
 
-        // setImages(images);
+        // Fetch the uploaded images
+        const { data: slides, error } = await supabase
+            .from('slides')
+            .select('*')
+            .eq('presentation_id', skeleton)
+            .order('slide_number', { ascending: true });
+
+        if (error) {
+            console.error("Error fetching slides:", error);
+        } else {
+            setImages(slides.map(slide => slide.image_url));
+        }
+
         setHasPresentationBeenChosenYet(false);
     }
 
     useEffect(() => {
-        if (id === "new") {
-            setHasPresentationBeenChosenYet(true);
+        async function fetchSlides() {
+            if (id !== "new") {
+                const { data: slides, error } = await supabase
+                    .from('slides')
+                    .select('*')
+                    .eq('presentation_id', id)
+                    .order('slide_number', { ascending: true });
+
+                if (error) {
+                    console.error("Error fetching slides:", error);
+                } else {
+                    setImages(slides.map(slide => slide.image_url));
+                }
+            } else {
+                setHasPresentationBeenChosenYet(true);
+            }
         }
-    }, []);
+
+        fetchSlides();
+    }, [id]);
+
+    const goToNextSlide = () => {
+        setCurrentSlideIndex((prevIndex) => 
+            prevIndex < images.length - 1 ? prevIndex + 1 : prevIndex
+        );
+    };
+
+    const goToPreviousSlide = () => {
+        setCurrentSlideIndex((prevIndex) => 
+            prevIndex > 0 ? prevIndex - 1 : prevIndex
+        );
+    };
 
     return (
         <div>
@@ -79,18 +126,19 @@ export default function Editor({ params }) {
                     </SignedIn>
                 </div>
             </div>
-            {/* Display the converted images */}
-            {images.map((image, index) => (
-                <div key={index}>
-                    <img src={image} alt={`Slide ${index + 1}`} />
-                </div>
-            ))}
+            <PresentationUi 
+                images={images} 
+                currentSlideIndex={currentSlideIndex}
+                goToNextSlide={goToNextSlide}
+                goToPreviousSlide={goToPreviousSlide}
+                slideTimes={slideTimes}
+                onUpdateSlideTimes={handleUpdateSlideTimes}
+            />
             <UploadModal
                 setIsOpen={setHasPresentationBeenChosenYet}
                 isOpen={hasPresentationBeenChosenYet}
                 uploadAndConvertPDF={uploadAndConvertPDF}
             />
-            <PresentationUi images={images} />
         </div>
     );
 }
