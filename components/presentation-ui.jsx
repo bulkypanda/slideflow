@@ -14,39 +14,77 @@ import { ChevronDown, Edit, Maximize2, Pause, Play, SkipBack, SkipForward } from
 import { FullScreenPresentation } from "./full-screen-presentation"
 
 function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
   const remainingSeconds = Math.floor(seconds % 60);
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+function formatTimeDifference(seconds) {
+  const absSeconds = Math.abs(seconds);
+  const minutes = Math.floor(absSeconds / 60);
+  const remainingSeconds = Math.floor(absSeconds % 60);
+  const sign = seconds >= 0 ? '+' : '-';
+  return `${sign}${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+function isValidTimeFormat(value) {
+  return /^\d{1,2}:\d{2}$/.test(value);
 }
 
 export function PresentationUi({ images, currentSlideIndex, goToNextSlide, goToPreviousSlide, slideTimes, onUpdateSlideTimes }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState("00:00:00")
   const [isFullScreen, setIsFullScreen] = useState(false)
+  const [timeItems, setTimeItems] = useState([])
 
   const PLACEHOLDER_BOX_COUNT = 5;
 
-  const timeItems = images.length > 0
-    ? images.map((_, index) => ({
-        id: index + 1,
-        time: formatTime(slideTimes[index] || 0),
-        difference: "",
-      }))
-    : Array(PLACEHOLDER_BOX_COUNT).fill().map((_, index) => ({
-        id: index + 1,
-        time: "00:00",
-        difference: "",
-      }));
+  useEffect(() => {
+    const initialTimeItems = images.length > 0
+      ? images.map((_, index) => ({
+          id: index + 1,
+          plannedTime: 0,
+          actualTime: slideTimes[index] || 0,
+          difference: "",
+        }))
+      : Array(PLACEHOLDER_BOX_COUNT).fill().map((_, index) => ({
+          id: index + 1,
+          plannedTime: 0,
+          actualTime: 0,
+          difference: "",
+        }));
+    setTimeItems(initialTimeItems);
+  }, [images, slideTimes]);
 
   useEffect(() => {
-    if (images.length > 0 && slideTimes.length !== images.length) {
-      onUpdateSlideTimes(new Array(images.length).fill(0));
+    if (images.length > 0 && slideTimes.length === images.length) {
+      const newTimeItems = timeItems.map((item, index) => ({
+        ...item,
+        actualTime: slideTimes[index],
+        difference: formatTimeDifference(slideTimes[index] - item.plannedTime),
+      }));
+      setTimeItems(newTimeItems);
     }
-  }, [images, slideTimes, onUpdateSlideTimes]);
+  }, [images, slideTimes]);
 
   const startPresentation = () => {
     setIsFullScreen(true)
+    onUpdateSlideTimes(timeItems.map(item => item.plannedTime))
   }
+
+  const handlePlannedTimeChange = (index, value) => {
+    if (/^\d{1,2}:\d{2}:\d{2}$/.test(value)) {
+      const [hours, minutes, seconds] = value.split(':').map(Number);
+      const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+      const newTimeItems = [...timeItems];
+      newTimeItems[index] = {
+        ...newTimeItems[index],
+        plannedTime: totalSeconds
+      };
+      setTimeItems(newTimeItems);
+    }
+  };
 
   return (
     <>
@@ -91,25 +129,28 @@ export function PresentationUi({ images, currentSlideIndex, goToNextSlide, goToP
           </div>
           <div className="border rounded-lg p-4 space-y-4">
             <div className="space-y-2">
-              {timeItems.map((item) => (
+              {timeItems.map((item, index) => (
                 <div
                   key={item.id}
-                  className="grid grid-cols-[auto,1fr,auto] gap-2 items-center">
+                  className="grid grid-cols-[auto,1fr,1fr] gap-2 items-center"
+                >
                   <span className="text-sm font-medium">{item.id}</span>
-                  <div className="grid grid-cols-2 px-3 py-2 border h-10 border-black/40 rounded-md">
-                    <div className="text-left border-right border-black">
-                      {item.time}
-                    </div>
-                    <div className="text-center h-full">
-                      <span className="text-sm">
-                        {item.difference}
-                      </span>
-                    </div>
+                  <input
+                    type="text"
+                    value={formatTime(item.plannedTime)}
+                    onChange={(e) => handlePlannedTimeChange(index, e.target.value)}
+                    className="px-2 py-1 border border-gray-300 rounded-md w-full"
+                    placeholder="00:00:00"
+                  />
+                  <div className="px-3 py-1 border border-gray-300 rounded-md flex items-center justify-center">
+                    <span className={`text-sm ${item.difference.startsWith('-') ? 'text-green-500' : 'text-red-500'}`}>
+                      {item.difference}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
-            <Button variant="outline" size="sm" className="w-full">
+            <Button variant="outline" size="sm" className="w-full" onClick={() => setTimeItems(timeItems.map(item => ({ ...item, plannedTime: 0, actualTime: 0, difference: "" })))}>
               Reset all
             </Button>
           </div>
@@ -124,6 +165,7 @@ export function PresentationUi({ images, currentSlideIndex, goToNextSlide, goToP
           onClose={() => setIsFullScreen(false)}
           initialSlideIndex={currentSlideIndex}
           onUpdateSlideTimes={onUpdateSlideTimes}
+          plannedTimes={timeItems.map(item => item.plannedTime)}
         />
       )}
     </>

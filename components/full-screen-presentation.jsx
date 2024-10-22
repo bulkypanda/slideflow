@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
 
-export function FullScreenPresentation({ images, onClose, initialSlideIndex, onUpdateSlideTimes }) {
+export function FullScreenPresentation({ images, onClose, initialSlideIndex, onUpdateSlideTimes, plannedTimes }) {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(initialSlideIndex)
-  const [slideTimes, setSlideTimes] = useState(images.map(() => 0))
+  const [slideTimes, setSlideTimes] = useState(plannedTimes)
   const [startTime, setStartTime] = useState(Date.now())
 
   const goToNextSlide = useCallback(() => {
@@ -56,6 +56,12 @@ export function FullScreenPresentation({ images, onClose, initialSlideIndex, onU
     return () => clearInterval(interval)
   }, [currentSlideIndex])
 
+  const handlePlannedTimeChange = (index, value) => {
+    const newTimeItems = [...timeItems];
+    newTimeItems[index].plannedTime = parseInt(value, 10) || 0;
+    setTimeItems(newTimeItems);
+  };
+
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
       <img
@@ -86,3 +92,4 @@ export function FullScreenPresentation({ images, onClose, initialSlideIndex, onU
     </div>
   )
 }
+
