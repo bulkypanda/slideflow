@@ -16,12 +16,34 @@ const SpeakerNotes = ({ notes }) => (
   </div>
 );
 
+const prefetchImages = (images, setImagesLoaded) => {
+  let loadedCount = 0;
+  const totalImages = images.length;
+
+  images.forEach((src) => {
+    const img = new Image();
+    img.onload = () => {
+      loadedCount++;
+      if (loadedCount === totalImages) {
+        setImagesLoaded(true);
+      }
+    };
+    img.src = src;
+  });
+};
+
 export function FullScreenPresentation({ images, onClose, initialSlideIndex, onUpdateSlideTimes, plannedTimes, isSpeakerView, speakerNotes }) {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(initialSlideIndex)
   const [slideTimes, setSlideTimes] = useState(plannedTimes.map(() => 0))
   const [startTime, setStartTime] = useState(Date.now())
   const [showWarning, setShowWarning] = useState(false)
   const [elapsedTime, setElapsedTime] = useState(0)
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  useEffect(() => {
+    setImagesLoaded(false);
+    prefetchImages(images, setImagesLoaded);
+  }, [images]);
 
   const goToNextSlide = useCallback(() => {
     if (currentSlideIndex < images.length - 1) {
@@ -83,10 +105,15 @@ export function FullScreenPresentation({ images, onClose, initialSlideIndex, onU
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
       <div className="relative w-full h-full">
+        {!imagesLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-white"></div>
+          </div>
+        )}
         <img
           src={images[currentSlideIndex]}
           alt={`Slide ${currentSlideIndex + 1}`}
-          className="max-h-full max-w-full object-contain mx-auto"
+          className={`max-h-full max-w-full object-contain mx-auto ${!imagesLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
         />
         {showWarning && (
           <WarningNotification message="Approaching planned time!" />

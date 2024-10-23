@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { ChevronDown, Edit, Maximize2, Pause, Play, SkipBack, SkipForward } from "lucide-react"
+import { ChevronDown, Edit, Maximize2, Pause, Play, SkipBack, SkipForward, ChevronLeft, ChevronRight } from "lucide-react"
 import { FullScreenPresentation } from "./full-screen-presentation"
 
 function formatTime(seconds) {
@@ -132,13 +132,13 @@ export function PresentationUi({
               </div>
               <div className="flex items-center mt-4 justify-center space-x-2">
                 <Button variant="outline" size="icon" onClick={goToPreviousSlide}>
-                  <SkipBack className="h-4 w-4"/>
+                  <ChevronLeft className="h-4 w-4"/>
                 </Button>
                 {/* <Button variant="outline" size="icon" onClick={() => setIsPlaying(!isPlaying)}>
                   {isPlaying ? <Pause className="h-4 w-4"/> : <Play className="h-4 w-4"/>}
                 </Button> */}
                 <Button variant="outline" size="icon" onClick={goToNextSlide}>
-                  <SkipForward className="h-4 w-4"/>
+                  <ChevronRight className="h-4 w-4"/>
                 </Button>
                 {/* <Input value={currentTime} readOnly className="w-24 h-9"/> */}
               </div>
