@@ -22,10 +22,11 @@ function formatTime(seconds) {
 
 function formatTimeDifference(seconds) {
   const absSeconds = Math.abs(seconds);
-  const minutes = Math.floor(absSeconds / 60);
+  const hours = Math.floor(absSeconds / 3600);
+  const minutes = Math.floor((absSeconds % 3600) / 60);
   const remainingSeconds = Math.floor(absSeconds % 60);
   const sign = seconds >= 0 ? '+' : '-';
-  return `${sign}${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  return `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
 function isValidTimeFormat(value) {
@@ -63,7 +64,7 @@ export function PresentationUi({
           id: index + 1,
           plannedTime: 0,
           actualTime: 0,
-          difference: "",
+          difference: "00:00:00",
         }));
     setTimeItems(initialTimeItems);
   }, [images, slideTimes, plannedTimes]);
@@ -155,7 +156,7 @@ export function PresentationUi({
                 </div>
               ))}
             </div>
-            <Button variant="outline" size="sm" className="w-full" onClick={() => setTimeItems(timeItems.map(item => ({ ...item, plannedTime: 0, actualTime: 0, difference: "" })))}>
+            <Button variant="outline" size="sm" className="w-full" onClick={() => setTimeItems(timeItems.map(item => ({ ...item, actualTime: 0, difference: formatTimeDifference(-item.plannedTime) })))}>
               Reset all
             </Button>
           </div>
