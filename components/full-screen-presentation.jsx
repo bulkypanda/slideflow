@@ -9,33 +9,43 @@ const WarningNotification = ({ message }) => (
   </div>
 );
 
-export function FullScreenPresentation({ images, onClose, initialSlideIndex, onUpdateSlideTimes, plannedTimes }) {
+const SpeakerNotes = ({ notes }) => (
+  <div className="absolute bottom-20 left-4 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
+    <h3 className="text-lg font-semibold mb-2">Speaker Notes</h3>
+    <p className="text-sm">{notes}</p>
+  </div>
+);
+
+export function FullScreenPresentation({ images, onClose, initialSlideIndex, onUpdateSlideTimes, plannedTimes, isSpeakerView, speakerNotes }) {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(initialSlideIndex)
-  const [slideTimes, setSlideTimes] = useState(plannedTimes)
+  const [slideTimes, setSlideTimes] = useState(plannedTimes.map(() => 0))
   const [startTime, setStartTime] = useState(Date.now())
   const [showWarning, setShowWarning] = useState(false)
+  const [elapsedTime, setElapsedTime] = useState(0)
 
   const goToNextSlide = useCallback(() => {
     if (currentSlideIndex < images.length - 1) {
       const newSlideTimes = [...slideTimes];
-      newSlideTimes[currentSlideIndex] = Math.round((Date.now() - startTime) / 1000);
+      newSlideTimes[currentSlideIndex] = elapsedTime;
       setSlideTimes(newSlideTimes);
       setCurrentSlideIndex(currentSlideIndex + 1);
       setStartTime(Date.now());
+      setElapsedTime(0);
       setShowWarning(false);
     }
-  }, [currentSlideIndex, images.length, slideTimes, startTime]);
+  }, [currentSlideIndex, images.length, slideTimes, elapsedTime]);
 
   const goToPreviousSlide = useCallback(() => {
     if (currentSlideIndex > 0) {
       const newSlideTimes = [...slideTimes];
-      newSlideTimes[currentSlideIndex] = Math.round((Date.now() - startTime) / 1000);
+      newSlideTimes[currentSlideIndex] = elapsedTime;
       setSlideTimes(newSlideTimes);
       setCurrentSlideIndex(currentSlideIndex - 1);
       setStartTime(Date.now());
+      setElapsedTime(0);
       setShowWarning(false);
     }
-  }, [currentSlideIndex, slideTimes, startTime]);
+  }, [currentSlideIndex, slideTimes, elapsedTime]);
 
   const handleKeyDown = useCallback((event) => {
     if (event.key === 'ArrowRight') {
@@ -56,21 +66,15 @@ export function FullScreenPresentation({ images, onClose, initialSlideIndex, onU
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setSlideTimes(prevTimes => {
-        const newTimes = [...prevTimes];
-        const currentTime = Math.round((Date.now() - startTime) / 1000);
-        newTimes[currentSlideIndex] = currentTime;
+      const currentTime = Math.round((Date.now() - startTime) / 1000);
+      setElapsedTime(currentTime);
 
-        // Check if in the last 1/5th of planned time
-        const plannedTime = plannedTimes[currentSlideIndex];
-        if (currentTime >= plannedTime * 0.8 && currentTime < plannedTime) {
-          setShowWarning(true);
-        } else {
-          setShowWarning(false);
-        }
-
-        return newTimes;
-      });
+      const plannedTime = plannedTimes[currentSlideIndex];
+      if (currentTime >= plannedTime * 0.8 && currentTime < plannedTime) {
+        setShowWarning(true);
+      } else {
+        setShowWarning(false);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
@@ -78,39 +82,40 @@ export function FullScreenPresentation({ images, onClose, initialSlideIndex, onU
 
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-      <img
-        src={images[currentSlideIndex]}
-        alt={`Slide ${currentSlideIndex + 1}`}
-        className="max-h-full max-w-full object-contain"
-      />
-      {showWarning && (
-        <WarningNotification message="Approaching planned time!" />
-      )}
-      <div className="absolute top-4 right-4 flex space-x-4">
-        <Button variant="outline" size="icon" onClick={() => {
-          const finalSlideTimes = [...slideTimes];
-          finalSlideTimes[currentSlideIndex] = Math.round((Date.now() - startTime) / 1000);
-          console.log("Slide times on exit:");
-          finalSlideTimes.forEach((actualTime, index) => {
-            console.log(`Slide ${index + 1}: Planned: ${plannedTimes[index]}s, Actual: ${actualTime}s`);
-          });
-          onUpdateSlideTimes(finalSlideTimes);
-          onClose();
-        }}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      <div className="absolute bottom-4 left-4 right-4 flex justify-between">
-        <Button variant="outline" size="icon" onClick={goToPreviousSlide}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <span className="text-white">
-          Slide {currentSlideIndex + 1} of {images.length} | 
-          Time on slide: {Math.floor(slideTimes[currentSlideIndex])}s
-        </span>
-        <Button variant="outline" size="icon" onClick={goToNextSlide}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+      <div className="relative w-full h-full">
+        <img
+          src={images[currentSlideIndex]}
+          alt={`Slide ${currentSlideIndex + 1}`}
+          className="max-h-full max-w-full object-contain mx-auto"
+        />
+        {showWarning && (
+          <WarningNotification message="Approaching planned time!" />
+        )}
+        <div className="absolute top-4 right-4 flex space-x-4">
+          <Button variant="outline" size="icon" onClick={() => {
+            const finalSlideTimes = [...slideTimes];
+            finalSlideTimes[currentSlideIndex] = elapsedTime;
+            onUpdateSlideTimes(finalSlideTimes);
+            onClose();
+          }} className="bg-gray-800 text-gray-200 hover:bg-gray-700">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="absolute bottom-4 left-4 right-4 flex justify-between">
+          <Button variant="outline" size="icon" onClick={goToPreviousSlide} className="bg-gray-800 text-gray-200 hover:bg-gray-700">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-white bg-gray-800 px-4 py-2 rounded-md">
+            Slide {currentSlideIndex + 1} of {images.length} | 
+            Time on slide: {elapsedTime}s
+          </span>
+          <Button variant="outline" size="icon" onClick={goToNextSlide} className="bg-gray-800 text-gray-200 hover:bg-gray-700">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        {isSpeakerView && (
+          <SpeakerNotes notes={speakerNotes[currentSlideIndex] || 'No speaker notes for this slide.'} />
+        )}
       </div>
     </div>
   )

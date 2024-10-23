@@ -107,11 +107,11 @@ export function PresentationUi({
         <div className="grid grid-cols-4 gap-4">
           <div className="space-y-4 col-span-3 h-full">
             <div className="border rounded-lg h-full p-4 flex flex-col">
-              <div className="flex justify-end mb-2">
+              {/* <div className="flex justify-end mb-2">
                 <Button variant="outline" size="icon">
                   <Maximize2 className="h-4 w-4"/>
                 </Button>
-              </div>
+              </div> */}
               <div className="flex-grow flex items-center justify-center bg-gray-100 rounded-lg min-h-[200px]">
                 {images.length > 0 ? (
                   <img src={images[currentSlideIndex]} alt={`Slide ${currentSlideIndex + 1}`} className="object-contain max-h-full max-w-full" />
@@ -123,13 +123,13 @@ export function PresentationUi({
                 <Button variant="outline" size="icon" onClick={goToPreviousSlide}>
                   <SkipBack className="h-4 w-4"/>
                 </Button>
-                <Button variant="outline" size="icon" onClick={() => setIsPlaying(!isPlaying)}>
+                {/* <Button variant="outline" size="icon" onClick={() => setIsPlaying(!isPlaying)}>
                   {isPlaying ? <Pause className="h-4 w-4"/> : <Play className="h-4 w-4"/>}
-                </Button>
+                </Button> */}
                 <Button variant="outline" size="icon" onClick={goToNextSlide}>
                   <SkipForward className="h-4 w-4"/>
                 </Button>
-                <Input value={currentTime} readOnly className="w-24 h-9"/>
+                {/* <Input value={currentTime} readOnly className="w-24 h-9"/> */}
               </div>
             </div>
           </div>
