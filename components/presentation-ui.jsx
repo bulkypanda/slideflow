@@ -32,7 +32,16 @@ function isValidTimeFormat(value) {
   return /^\d{1,2}:\d{2}$/.test(value);
 }
 
-export function PresentationUi({ images, currentSlideIndex, goToNextSlide, goToPreviousSlide, slideTimes, onUpdateSlideTimes }) {
+export function PresentationUi({ 
+    images, 
+    currentSlideIndex, 
+    goToNextSlide, 
+    goToPreviousSlide, 
+    slideTimes, 
+    onUpdateSlideTimes,
+    speakerNotes,
+    onUpdateSpeakerNotes
+}) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState("00:00:00")
   const [isFullScreen, setIsFullScreen] = useState(false)
@@ -86,13 +95,17 @@ export function PresentationUi({ images, currentSlideIndex, goToNextSlide, goToP
     }
   };
 
+  const handleSpeakerNoteChange = (e) => {
+    onUpdateSpeakerNotes(currentSlideIndex, e.target.value);
+  };
+
   return (
     <>
       <div className="w-full mx-auto px-5 mt-4 space-y-4">
         <div className="flex justify-between items-center">
-          <Button variant="outline" size="icon">
+          {/* <Button variant="outline" size="icon">
             <Edit className="h-4 w-4" />
-          </Button>
+          </Button> */}
           <Button variant="outline" className="ml-auto" onClick={startPresentation}>
             Present
             <ChevronDown className="ml-2 h-4 w-4" />
@@ -156,7 +169,12 @@ export function PresentationUi({ images, currentSlideIndex, goToNextSlide, goToP
           </div>
         </div>
         <div className="border rounded-lg p-4">
-          <Textarea placeholder="Click to add speaker notes" className="min-h-[100px]" />
+          <Textarea 
+            placeholder="Click to add speaker notes" 
+            className="min-h-[100px]"
+            value={speakerNotes[currentSlideIndex] || ''}
+            onChange={handleSpeakerNoteChange}
+          />
         </div>
       </div>
       {isFullScreen && (

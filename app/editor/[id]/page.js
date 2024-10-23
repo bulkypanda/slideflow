@@ -13,10 +13,53 @@ export default function Editor({ params }) {
     const [images, setImages] = useState([]);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const [slideTimes, setSlideTimes] = useState([]);
+    const [speakerNotes, setSpeakerNotes] = useState([]);
+    const [presentationTitle, setPresentationTitle] = useState("");
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
 
     const handleUpdateSlideTimes = (newSlideTimes) => {
         setSlideTimes(newSlideTimes);
     };
+
+    const handleUpdateSpeakerNotes = async (index, note) => {
+        const newSpeakerNotes = [...speakerNotes];
+        newSpeakerNotes[index] = note;
+        setSpeakerNotes(newSpeakerNotes);
+
+        // Save to database
+        await saveSpeakerNote(id, index, note);
+    };
+
+    async function saveSpeakerNote(presentationId, slideIndex, note) {
+        const { data, error } = await supabase
+            .from('slides')
+            .update({ speaker_notes: note })
+            .eq('presentation_id', presentationId)
+            .eq('slide_number', slideIndex);
+
+        if (error) {
+            console.error("Error saving speaker note:", error);
+        }
+    }
+
+    const handleUpdateTitle = async (newTitle) => {
+        setPresentationTitle(newTitle);
+        setIsEditingTitle(false);
+
+        // Save to database
+        await savePresentationTitle(id, newTitle);
+    };
+
+    async function savePresentationTitle(presentationId, title) {
+        const { data, error } = await supabase
+            .from('presentations')
+            .update({ title: title })
+            .eq('id', presentationId);
+
+        if (error) {
+            console.error("Error saving presentation title:", error);
+        }
+    }
 
     async function convertPDFToJpeg(file) {
         const pdfjsLib = await import("pdfjs-dist/build/pdf");
@@ -75,25 +118,38 @@ export default function Editor({ params }) {
     }
 
     useEffect(() => {
-        async function fetchSlides() {
+        async function fetchPresentation() {
             if (id !== "new") {
-                const { data: slides, error } = await supabase
+                const { data: presentation, error: presentationError } = await supabase
+                    .from('presentations')
+                    .select('title')
+                    .eq('id', id)
+                    .single();
+
+                if (presentationError) {
+                    console.error("Error fetching presentation:", presentationError);
+                } else {
+                    setPresentationTitle(presentation.title);
+                }
+
+                const { data: slides, error: slidesError } = await supabase
                     .from('slides')
                     .select('*')
                     .eq('presentation_id', id)
                     .order('slide_number', { ascending: true });
 
-                if (error) {
-                    console.error("Error fetching slides:", error);
+                if (slidesError) {
+                    console.error("Error fetching slides:", slidesError);
                 } else {
                     setImages(slides.map(slide => slide.image_url));
+                    setSpeakerNotes(slides.map(slide => slide.speaker_notes || ''));
                 }
             } else {
                 setHasPresentationBeenChosenYet(true);
             }
         }
 
-        fetchSlides();
+        fetchPresentation();
     }, [id]);
 
     const goToNextSlide = () => {
@@ -111,11 +167,29 @@ export default function Editor({ params }) {
     return (
         <div>
             <div className="flex items-center py-4 px-5 justify-between border-b border-black/30">
-                <div className="flex gap-6 text-xl">
+                <div className="flex gap-6 text-xl items-center">
                     <Link href="/" className="text-2xl">
                         ⏰
                     </Link>
-                    <h1 className="font-medium">Presentation Title</h1>
+                    {isEditingTitle ? (
+                        <input
+                            type="text"
+                            value={presentationTitle}
+                            onChange={(e) => setPresentationTitle(e.target.value)}
+                            onBlur={() => handleUpdateTitle(presentationTitle)}
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleUpdateTitle(presentationTitle);
+                                }
+                            }}
+                            className="font-medium border-b border-gray-300 focus:outline-none focus:border-blue-500"
+                            autoFocus
+                        />
+                    ) : (
+                        <h1 className="font-medium cursor-pointer" onClick={() => setIsEditingTitle(true)}>
+                            {presentationTitle || "Untitled Presentation"}
+                        </h1>
+                    )}
                 </div>
                 <div className="flex gap-6">
                     <SignedOut>
@@ -133,6 +207,8 @@ export default function Editor({ params }) {
                 goToPreviousSlide={goToPreviousSlide}
                 slideTimes={slideTimes}
                 onUpdateSlideTimes={handleUpdateSlideTimes}
+                speakerNotes={speakerNotes}
+                onUpdateSpeakerNotes={handleUpdateSpeakerNotes}
             />
             <UploadModal
                 setIsOpen={setHasPresentationBeenChosenYet}
