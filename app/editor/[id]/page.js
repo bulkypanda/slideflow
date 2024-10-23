@@ -7,6 +7,7 @@ import { UploadModal } from "@/components/upload-modal";
 import {createPresentationSkeleton, uploadImages} from "@/lib/actions";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from 'next/navigation';
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Editor({ params }) {
     const { id } = params;
@@ -169,7 +170,7 @@ export default function Editor({ params }) {
 
     return (
         <div>
-            <div className="flex items-center py-4 px-5 justify-between border-b border-black/30">
+            <div className="flex items-center py-4 px-5 justify-between border-b border-black/30 dark:border-white/30">
                 <div className="flex gap-6 text-xl items-center">
                     <Link href="/" className="text-2xl">
                         ⏰
@@ -185,20 +186,22 @@ export default function Editor({ params }) {
                                     handleUpdateTitle(presentationTitle);
                                 }
                             }}
-                            className="font-medium border-b border-gray-300 focus:outline-none focus:border-blue-500"
+                            className="font-medium border-b border-gray-300 focus:outline-none focus:border-blue-500 dark:bg-gray-800 dark:text-white"
                             autoFocus
                         />
                     ) : (
-                        <h1 className="font-medium cursor-pointer" onClick={() => setIsEditingTitle(true)}>
+                        <h1 className="font-medium cursor-pointer dark:text-white" onClick={() => setIsEditingTitle(true)}>
                             {presentationTitle || "Untitled Presentation"}
                         </h1>
                     )}
                 </div>
-                <div className="flex gap-6">
+                <div className="flex gap-6 items-center">
+                    <ThemeToggle />
                     <SignedOut>
                         <SignInButton />
                     </SignedOut>
                     <SignedIn>
+                        <Link href="/presentations" className="hover:text-blue-300 transition-colors dark:text-white">Presentations</Link>
                         <UserButton />
                     </SignedIn>
                 </div>
