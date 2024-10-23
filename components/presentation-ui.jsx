@@ -49,6 +49,7 @@ export function PresentationUi({
   const [currentTime, setCurrentTime] = useState("00:00:00")
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [timeItems, setTimeItems] = useState([])
+  const [isSpeakerView, setIsSpeakerView] = useState(false)
 
   const PLACEHOLDER_BOX_COUNT = 5;
 
@@ -69,9 +70,10 @@ export function PresentationUi({
     setTimeItems(initialTimeItems);
   }, [images, slideTimes, plannedTimes]);
 
-  const startPresentation = () => {
+  const startPresentation = (isSpeakerView) => {
     setIsFullScreen(true)
     onUpdateSlideTimes(timeItems.map(item => item.plannedTime))
+    setIsSpeakerView(isSpeakerView)
   }
 
   const handlePlannedTimeChange = (index, value) => {
@@ -96,13 +98,22 @@ export function PresentationUi({
     <>
       <div className="w-full mx-auto px-5 mt-4 space-y-4">
         <div className="flex justify-between items-center">
-          {/* <Button variant="outline" size="icon">
-            <Edit className="h-4 w-4" />
-          </Button> */}
-          <Button variant="outline" className="ml-auto" onClick={startPresentation}>
-            Present
-            <ChevronDown className="ml-2 h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                Present
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => startPresentation(false)}>
+                Normal View
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => startPresentation(true)}>
+                Speaker View
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="grid grid-cols-4 gap-4">
           <div className="space-y-4 col-span-3 h-full">
@@ -177,6 +188,8 @@ export function PresentationUi({
           initialSlideIndex={currentSlideIndex}
           onUpdateSlideTimes={onUpdateSlideTimes}
           plannedTimes={timeItems.map(item => item.plannedTime)}
+          isSpeakerView={isSpeakerView}
+          speakerNotes={speakerNotes}
         />
       )}
     </>
