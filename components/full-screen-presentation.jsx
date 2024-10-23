@@ -1,11 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
-import { X, ChevronLeft, ChevronRight } from "lucide-react"
+import { X, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react"
+
+const WarningNotification = ({ message }) => (
+  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-4 py-2 rounded-full flex items-center">
+    <AlertTriangle className="mr-2 h-4 w-4" />
+    <span>{message}</span>
+  </div>
+);
 
 export function FullScreenPresentation({ images, onClose, initialSlideIndex, onUpdateSlideTimes, plannedTimes }) {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(initialSlideIndex)
   const [slideTimes, setSlideTimes] = useState(plannedTimes)
   const [startTime, setStartTime] = useState(Date.now())
+  const [showWarning, setShowWarning] = useState(false)
 
   const goToNextSlide = useCallback(() => {
     if (currentSlideIndex < images.length - 1) {
@@ -14,6 +22,7 @@ export function FullScreenPresentation({ images, onClose, initialSlideIndex, onU
       setSlideTimes(newSlideTimes);
       setCurrentSlideIndex(currentSlideIndex + 1);
       setStartTime(Date.now());
+      setShowWarning(false);
     }
   }, [currentSlideIndex, images.length, slideTimes, startTime]);
 
@@ -24,6 +33,7 @@ export function FullScreenPresentation({ images, onClose, initialSlideIndex, onU
       setSlideTimes(newSlideTimes);
       setCurrentSlideIndex(currentSlideIndex - 1);
       setStartTime(Date.now());
+      setShowWarning(false);
     }
   }, [currentSlideIndex, slideTimes, startTime]);
 
@@ -35,7 +45,7 @@ export function FullScreenPresentation({ images, onClose, initialSlideIndex, onU
     } else if (event.key === 'Escape') {
       onClose();
     }
-  }, [goToNextSlide, goToPreviousSlide, onClose]);
+  }, [goToNextSlide, goToPreviousSlide, onClose])
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -48,19 +58,23 @@ export function FullScreenPresentation({ images, onClose, initialSlideIndex, onU
     const interval = setInterval(() => {
       setSlideTimes(prevTimes => {
         const newTimes = [...prevTimes];
-        newTimes[currentSlideIndex] = Math.round((Date.now() - startTime) / 1000);
+        const currentTime = Math.round((Date.now() - startTime) / 1000);
+        newTimes[currentSlideIndex] = currentTime;
+
+        // Check if in the last 1/5th of planned time
+        const plannedTime = plannedTimes[currentSlideIndex];
+        if (currentTime >= plannedTime * 0.8 && currentTime < plannedTime) {
+          setShowWarning(true);
+        } else {
+          setShowWarning(false);
+        }
+
         return newTimes;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [currentSlideIndex, startTime]);
-
-  const handlePlannedTimeChange = (index, value) => {
-    const newTimeItems = [...timeItems];
-    newTimeItems[index].plannedTime = parseInt(value, 10) || 0;
-    setTimeItems(newTimeItems);
-  };
+  }, [currentSlideIndex, startTime, plannedTimes]);
 
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
@@ -69,6 +83,9 @@ export function FullScreenPresentation({ images, onClose, initialSlideIndex, onU
         alt={`Slide ${currentSlideIndex + 1}`}
         className="max-h-full max-w-full object-contain"
       />
+      {showWarning && (
+        <WarningNotification message="Approaching planned time!" />
+      )}
       <div className="absolute top-4 right-4 flex space-x-4">
         <Button variant="outline" size="icon" onClick={() => {
           const finalSlideTimes = [...slideTimes];
