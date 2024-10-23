@@ -15,6 +15,7 @@ export default function Editor({ params }) {
     const [images, setImages] = useState([]);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const [slideTimes, setSlideTimes] = useState([]);
+    const [plannedTimes, setPlannedTimes] = useState([]);
     const [speakerNotes, setSpeakerNotes] = useState([]);
     const [presentationTitle, setPresentationTitle] = useState("");
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -147,6 +148,8 @@ export default function Editor({ params }) {
                 } else {
                     setImages(slides.map(slide => slide.image_url));
                     setSpeakerNotes(slides.map(slide => slide.speaker_notes || ''));
+                    setPlannedTimes(slides.map(slide => slide.planned_time || 0));
+                    setSlideTimes(slides.map(slide => slide.actual_time || 0));
                 }
             } else {
                 setHasPresentationBeenChosenYet(true);
@@ -167,6 +170,27 @@ export default function Editor({ params }) {
             prevIndex > 0 ? prevIndex - 1 : prevIndex
         );
     };
+
+    const handleUpdatePlannedTime = async (index, plannedTime) => {
+        const newPlannedTimes = [...plannedTimes];
+        newPlannedTimes[index] = plannedTime;
+        setPlannedTimes(newPlannedTimes);
+
+        // Save to database
+        await savePlannedTime(id, index, plannedTime);
+    };
+
+    async function savePlannedTime(presentationId, slideIndex, plannedTime) {
+        const { data, error } = await supabase
+            .from('slides')
+            .update({ planned_time: plannedTime })
+            .eq('presentation_id', presentationId)
+            .eq('slide_number', slideIndex);
+
+        if (error) {
+            console.error("Error saving planned time:", error);
+        }
+    }
 
     return (
         <div>
@@ -215,6 +239,8 @@ export default function Editor({ params }) {
                 onUpdateSlideTimes={handleUpdateSlideTimes}
                 speakerNotes={speakerNotes}
                 onUpdateSpeakerNotes={handleUpdateSpeakerNotes}
+                plannedTimes={plannedTimes}
+                onUpdatePlannedTime={handleUpdatePlannedTime}
             />
             <UploadModal
                 setIsOpen={setHasPresentationBeenChosenYet}

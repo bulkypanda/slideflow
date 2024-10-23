@@ -40,7 +40,9 @@ export function PresentationUi({
     slideTimes, 
     onUpdateSlideTimes,
     speakerNotes,
-    onUpdateSpeakerNotes
+    onUpdateSpeakerNotes,
+    plannedTimes,
+    onUpdatePlannedTime
 }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState("00:00:00")
@@ -53,9 +55,9 @@ export function PresentationUi({
     const initialTimeItems = images.length > 0
       ? images.map((_, index) => ({
           id: index + 1,
-          plannedTime: 0,
+          plannedTime: plannedTimes[index] || 0,
           actualTime: slideTimes[index] || 0,
-          difference: "",
+          difference: formatTimeDifference((slideTimes[index] || 0) - (plannedTimes[index] || 0)),
         }))
       : Array(PLACEHOLDER_BOX_COUNT).fill().map((_, index) => ({
           id: index + 1,
@@ -64,18 +66,7 @@ export function PresentationUi({
           difference: "",
         }));
     setTimeItems(initialTimeItems);
-  }, [images, slideTimes]);
-
-  useEffect(() => {
-    if (images.length > 0 && slideTimes.length === images.length) {
-      const newTimeItems = timeItems.map((item, index) => ({
-        ...item,
-        actualTime: slideTimes[index],
-        difference: formatTimeDifference(slideTimes[index] - item.plannedTime),
-      }));
-      setTimeItems(newTimeItems);
-    }
-  }, [images, slideTimes]);
+  }, [images, slideTimes, plannedTimes]);
 
   const startPresentation = () => {
     setIsFullScreen(true)
@@ -92,6 +83,7 @@ export function PresentationUi({
         plannedTime: totalSeconds
       };
       setTimeItems(newTimeItems);
+      onUpdatePlannedTime(index, totalSeconds);
     }
   };
 
