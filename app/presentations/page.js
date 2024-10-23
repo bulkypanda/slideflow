@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
+import { PlusCircle, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Presentations() {
   const { user } = useUser();
@@ -32,7 +34,6 @@ export default function Presentations() {
   const handleDelete = async (presentationId) => {
     if (window.confirm('Are you sure you want to delete this presentation?')) {
       try {
-        // First, delete all slides associated with the presentation
         const { error: slidesError } = await supabase
           .from('slides')
           .delete()
@@ -43,7 +44,6 @@ export default function Presentations() {
           return;
         }
 
-        // Then, delete the presentation itself
         const { error: presentationError } = await supabase
           .from('presentations')
           .delete()
@@ -54,7 +54,6 @@ export default function Presentations() {
           return;
         }
 
-        // If both operations are successful, update the local state
         setPresentations(presentations.filter(p => p.id !== presentationId));
       } catch (error) {
         console.error("Error during deletion process:", error);
@@ -63,30 +62,42 @@ export default function Presentations() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Your Presentations</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {presentations.map((presentation) => (
-          <div key={presentation.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
-            <Link href={`/editor/${presentation.id}`}>
-              <h2 className="text-xl font-semibold mb-2">{presentation.title}</h2>
-              <p className="text-gray-600">
-                Created: {new Date(presentation.created_at).toLocaleDateString()}
-              </p>
-            </Link>
-            <button
-              onClick={() => handleDelete(presentation.id)}
-              className="mt-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition-colors"
-            >
-              Delete
-            </button>
-          </div>
-        ))}
-        <Link href="/editor/new">
-          <div className="border rounded-lg p-4 hover:shadow-lg transition-shadow flex items-center justify-center">
-            <span className="text-2xl">+ New Presentation</span>
+    <div className="container mx-auto px-4 py-12">
+      {/* <h1 className="text-4xl font-bold mb-8 text-center">Your Presentations</h1> */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <Link href="/editor/new" className="block">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 h-full flex flex-col items-center justify-center text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors">
+            <PlusCircle className="w-12 h-12 mb-4" />
+            <span className="text-xl font-semibold">Create New Presentation</span>
           </div>
         </Link>
+        {presentations.map((presentation) => (
+          <div key={presentation.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105">
+            <Link href={`/editor/${presentation.id}`}>
+              <div className="p-6">
+                <h2 className="text-xl font-semibold mb-2 truncate">{presentation.title}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Created: {new Date(presentation.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </Link>
+            <div className="bg-gray-100 dark:bg-gray-700 px-6 py-3 flex justify-between items-center">
+              <Link href={`/editor/${presentation.id}`}>
+                <Button variant="outline" size="sm">
+                  Edit
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDelete(presentation.id)}
+                className="text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
