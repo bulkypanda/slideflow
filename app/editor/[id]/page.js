@@ -6,6 +6,7 @@ import { PresentationUi } from "@/components/presentation-ui";
 import { UploadModal } from "@/components/upload-modal";
 import {createPresentationSkeleton, uploadImages} from "@/lib/actions";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from 'next/navigation';
 
 export default function Editor({ params }) {
     const { id } = params;
@@ -16,6 +17,7 @@ export default function Editor({ params }) {
     const [speakerNotes, setSpeakerNotes] = useState([]);
     const [presentationTitle, setPresentationTitle] = useState("");
     const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const router = useRouter();
 
     const handleUpdateSlideTimes = (newSlideTimes) => {
         setSlideTimes(newSlideTimes);
@@ -115,6 +117,7 @@ export default function Editor({ params }) {
         }
 
         setHasPresentationBeenChosenYet(false);
+        return skeleton; // Return the new presentation ID
     }
 
     useEffect(() => {
@@ -213,7 +216,10 @@ export default function Editor({ params }) {
             <UploadModal
                 setIsOpen={setHasPresentationBeenChosenYet}
                 isOpen={hasPresentationBeenChosenYet}
-                uploadAndConvertPDF={uploadAndConvertPDF}
+                uploadAndConvertPDF={async (file) => {
+                    const newPresentationId = await uploadAndConvertPDF(file);
+                    router.push(`/editor/${newPresentationId}`);
+                }}
             />
         </div>
     );

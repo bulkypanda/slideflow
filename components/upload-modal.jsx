@@ -17,7 +17,6 @@ export function UploadModal({isOpen, setIsOpen, uploadAndConvertPDF}) {
   const [isDragging, setIsDragging] = useState(false)
 
   const handleFile = useCallback((file) => {
-    console.log("File name:", file.name)
     setIsUploading(true)
     // Simulating upload process
     uploadAndConvertPDF(file)
